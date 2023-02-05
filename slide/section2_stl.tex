@@ -1,0 +1,188 @@
+\documentclass[standalone]{beamer}
+
+\begin{document}
+\section{好用的 STL}
+
+\begin{frame}{好用的 STL}
+  \begin{itemize}
+    \item STL 裡面有許多實用的東西
+    \item 這個章節會選一些介紹，剩下的就麻煩大家自行上網搜尋ㄛ
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\btitle{bitset 例題}}
+  \begin{problem}[NEOJ 743 數字總和]
+    給你 $N$ 個數字 $a_1, a_2, \dots, a_N$，並且滿足 $\sum_{i = 1}^{N} a_i \le M$。
+
+    現在，對於每個數字 $x$ ，請判斷 $x$ 可不可由 $a_1, a_2, \dots, a_N$ 給湊出來。也就是說，能不能找到一個集合 $S$ ，使得 $\sum_{i \in S} a_i = x$。
+
+    \begin{itemize}
+        \item $N \leq 2 \times 10^5$
+        \item $M \leq 2 \times 10^5$
+    \end{itemize}
+  \end{problem}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{bitset}}
+  \begin{itemize}
+    \item 我會 DP！
+    \item
+    \begin{minted}[breaklines]{cpp}
+      dp[0] = 1;
+      for (int i = 1; i <= n; ++i) {
+        std::cin >> a[i];
+        for (int x = m; x >= a[i]; --x) {
+          dp[x] |= dp[x - a[i]];
+        }
+      }
+    \end{minted}
+    \item 複雜度是 $O(NM)$，TLE
+    \item bitset 該出場了！ 
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\btitle{bitset}}
+  \begin{itemize}
+    \item 可以想像成一個大 bool 陣列
+    \item 可以直接對這個 bool 陣列做位元操作（and, or, 左移等等）
+    \item 可是等等，上面那個轉移式可以被寫成兩個 bool 陣列做位元操作的形式嗎？
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{範例實作}}
+  \begin{itemize}
+    \item
+    \begin{minted}[breaklines]{cpp}
+      bool dp_tmp[kN] = {false};
+      for (int x = a[i]; x <= m; ++x) { // step 1
+        dp_tmp[x] = dp[x - a[i]];
+      }
+      for (int x = 0; x <= m; ++ x) { // step 2
+        dp[x] = dp[x] | dp_tmp[x];
+      }
+    \end{minted}
+    \item step 1 其實就是把 $dp$ 整個陣列往右移 $a[i]$ 格
+    \item step 2 其實就是 $dp$ 跟 $dp\_tmp$ 做 and 操作
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{範例實作}}
+  \begin{minted}[breaklines]{cpp}
+    std::bitset<kN> dp; // 宣告一個大小為 kN 的 bitset
+    dp[0] = 1; // dp[0] 可以直接存取 bitset 的第 0 個 bit，也可以直接寫值
+    for (int i = 1; i <= n; ++i) {
+      std::cin >> a[i];
+      dp |= (dp << a[i]); // dp = dp | (dp << a[i]);
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}{\btitle{bitset}}
+  \begin{itemize}
+    \item 複雜度瞬間變成 $O(\frac{NM}{w})$，AC
+    \item $w$ 要看跑程式機器的 word 大小，通常不是 $32$ 就是 $64$
+    \item 官解複雜度有除 32 或 64 通常代表有用到 bitset
+    \item bitset 的更多用法歡迎參考講義喔！
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\btitle{離散化}}
+  \begin{itemize}
+    \item 詳細的定義可以參考講義
+    \item 白話文：把數字重新從 $1$ 開始按照大小填
+    \item $[5, -6, 3, 5, 7]$ 變成 $[3, 1, 2, 3, 4]$
+    \item 通常離散化後的數字都會是整數
+    \item 常見用途：把 $[1, 10^9]$ 的數字變成 $[1, N]$ 後，就可以開一個大小是 $O(N)$ 的陣列做事
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{idea 1}}
+  \begin{itemize}
+    \item 把那 $N$ 個數字丟進 \texttt{std::map} 裡面
+    \item 再依序把數字在 map 中對應到的 value 依序填上 $[1, N]$
+    \item 最後利用 map 把原本的數字替換成新的數字
+    \begin{minted}[breaklines]{cpp}
+      std::map<int, int> mp;
+      for (int i : a) mp[i] = 0;
+      int idx = 0;
+      for (auto p : mp) mp[p.first] = ++idx;
+      for (int &i : a) i = mp[i];
+    \end{minted}
+    \item \texttt{std::map} 常數太大了，實作上並不是一個有效率的作法
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{idea 1}}
+  \begin{itemize}
+    \item 把所有數字由小到大排序好
+    \item 利用二分搜尋法，來找出每個數字是第幾小
+    \item 比如說，$[5, -6, 3, 5, 7]$ 的 $5$ 是第三小，就把 $5$ 對應到 $3$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{範例實作}}
+  \begin{minted}[breaklines]{cpp}
+    std::vector<int> v;
+    for (int i = 1; i <= n; ++i) {
+      v.emplace_back(arr[i]);
+    }
+    std::sort(v.begin(), v.end());
+    for (int i = 1; i <= n; ++i) {
+      arr[i] = std::lower_bound(v.begin(), v.end(), arr[i]) - v.begin() + 1;
+    }
+  \end{minted}
+  
+  \texttt{std::sort} 可以用 $O(N \log N)$ 的時間來排序那 $N$ 個數字
+
+  \texttt{std::lower\_bound} 可以在 $O(\log N)$ 的時間內找出第一個不小於目標數字的位置
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{範例實作}}
+  \begin{itemize}
+    \item 
+    \begin{minted}[breaklines]{cpp}
+      std::vector<int> v;
+      for (int i = 1; i <= n; ++i) {
+        v.emplace_back(arr[i]);
+      }
+      std::sort(v.begin(), v.end());
+      v.resize(std::unique(v.begin(), v.end()) - v.begin());
+      for (int i = 1; i <= n; ++i) {
+        arr[i] = std::lower_bound(v.begin(), v.end(), arr[i]) - v.begin() + 1;
+      }
+    \end{minted}
+
+    \item \texttt{std::unique} 會把所有不同的元素搬到容器的前面，並且回傳最後一個不同元素後面的位置
+    \item 拿這個回傳值跟容器的開頭相減，就可以得到總共有多少相異的元素（resize 那行在做的事情）
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\btitle{離散化}}
+  \begin{itemize}
+    \item \texttt{std::sort} 可以用 $O(N \log N)$ 的時間來排序那 $N$ 個數字
+    \item \texttt{std::lower\_bound} 可以在 $O(\log N)$ 的時間內找出第一個不小於目標數字的位置
+    \item \texttt{std::unique} 會把所有不同的元素搬到容器的前面，並且回傳最後一個不同元素後面的位置，複雜度為 $O(N)$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\btitle{pbds}}
+  \begin{itemize}
+    \item 平板電視、黑魔法
+    \item 有現成的 hash table、heap、平衡樹
+    \item 平衡樹比 \texttt{std::set} 還強大，可以支援搜尋一個數字的 order （大小）
+    \item 但其實不會 pbds 對競程影響不會那麼大(?)
+    \item 有興趣請參考講義 + 網路資料！
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\btitle{rope}}
+  \begin{itemize}
+    \item 簡化版持久化線段樹
+    \item 有興趣請參考講義 + 網路資料！
+  \end{itemize}
+\end{frame}
+
+\end{document}
+
+
+

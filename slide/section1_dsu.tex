@@ -1,0 +1,257 @@
+\documentclass[standalone]{beamer}
+
+\begin{document}
+\section{並查集}
+
+\begin{frame}{並查集}
+  \begin{itemize}
+    \item 支援合併及查詢集合的資料結構
+    \item 具體來說，需要支援：
+    \begin{enumerate}
+      \item init($n$) : 初始 $n$ 個元素，各自屬於一個獨立的集合。
+      \item union($a, b$) : 將 $a$ 元素所在的集合以及 $b$ 元素所在的集合合併。
+      \item find($a$) : 詢問 $a$ 所在的集合編號。
+    \end{enumerate}
+    \item 維護的集合兩兩互斥
+    \item 來畫圖解釋吧！
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\btitle{實作方法}}
+  \begin{itemize}
+    \item 將每個集合以樹狀結構來表示
+    \item 整個並查集會形成一個森林，而每棵樹分別代表一個集合
+    \item 每個元素記錄自身的父節點（程式碼中的 $p$），而每棵樹便以根節點（$p[i] = i$ 的點）作爲代表
+    \item 在做集合相關操作的時候，\textbf{必須要用代表點（也就是根節點）}來操作
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{範例實作}}
+  \begin{minted}[breaklines]{cpp}
+    struct DisjointSet {
+      int p[maxn];
+      void init(int n) {
+        for (int i = 1; i <= n; i++)
+          p[i] = i;
+      }
+      int find(int x) { return x == p[x] ? x : find(p[x]); }
+      void join(int x, int y) { p[find(x)] = find(y); }
+    };
+  \end{minted}
+\end{frame}
+
+\begin{frame}{\btitle{時間複雜度}}
+  \begin{itemize}
+    \item \texttt{init()}：就是個 $O(N)$
+    \item \texttt{find(x)}：看起來好像很快，但其實 worst case 會到 $O(N)$（樹是一條鏈的狀況）
+    \item \texttt{join(x, y)}：就是個 $O(1)$
+    \item 想想看，\texttt{find(x)} 真的需要 $O(N)$ 那麼多嗎？
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{範例實作}}
+  \begin{itemize}
+    \item \texttt{find()} 事實上就是在樹上不斷往父節點爬
+    \item 把查詢路徑上所有人的父節點設爲根節點！
+    \item 關心的只是每個節點屬於哪個集合，樹狀結構長什麼樣子並不重要
+    \item \texttt{return x == p[x] ? x : p[x] = find(p[x]);}
+    \item 經過這個改善後，複雜度\textbf{均攤}下來是 $O(N \log N)$
+    \item \textbf{路徑壓縮}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{範例實作}}
+  \begin{itemize}
+    \item 那 \texttt{join()} 呢？有沒有比較厲害的 join 方式可以降低複雜度？
+    \item \textbf{union by rank}
+    \item 維護每棵樹當前的深度
+    \item 每次要合併時，都將深度小的接到深度大的上
+    \item 於是，這樣樹的深度就不會超過 $O(\log n)$，\texttt{find()} 在沒有路徑壓縮下複雜度也是好的
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{範例實作}}
+  \begin{minted}[breaklines]{cpp}
+    void join(int x, int y) {
+      x = find(x), y = find(y);
+      if (x == y)
+        return;
+      if (rk[x] < rk[y]) // union by rank
+        swap(x, y);
+      p[y] = x;
+      if (rk[x] == rk[y])
+        ++rk[x];
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{實作總結}}
+  \begin{itemize}
+    \item 什麼都不做會退化到 $O(N)$
+    \item union by rank / 路徑壓縮只用一個的話可以讓複雜度變 $O(\log N)$
+    \item 同場加碼：union by rank 跟路徑壓縮一起做的話，均攤時間複雜度爲 $O( \alpha( n ) )$，幾乎可以視為 $O(1)$！
+    \item 同場加碼：union by size （小樹接到大樹）跟 union by rank 的效果是一樣的喔！
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\btitle{例題}}
+  \begin{problem}[經典問題（這題講義上沒有）]
+    給你一張 $N$ 個點的圖 $G$，圖一開始沒有任何邊，以及 $M$ 筆操作。
+
+    操作有三種：
+    \begin{itemize}
+      \item 加邊：給 $a, b$，把點 $a$ 跟點 $b$ 中間加上一條邊
+      \item 詢問一：給 $a, b$，問 $a, b$ 是否在同一個連通塊
+      \item 詢問二：詢問目前的圖有多少個連通塊
+    \end{itemize}
+
+    \begin{itemize}
+      \item $N, M \leq 10^5$
+    \end{itemize}
+  \end{problem}
+\end{frame}
+
+\begin{frame}{並查集}
+  \begin{itemize}
+    \item 並查集很常用的地方：維護圖的連通性
+    \item 並查集的集合\textbf{維護連通塊}
+    \item 一開始圖是空的，相當於所有點都在自己的連通塊裡面，對應到\texttt{init(N)}！
+    \item 有一條邊新增進來的時候，相當於把兩個連通塊變成一個連通塊
+    \item 也相當於是並查集的 \texttt{join()} 操作！
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{並查集}
+  \begin{itemize}
+    \item 詢問兩點是否連通？
+    \item 判斷兩個點是不是在同一個集合
+    \item \texttt{djs.find(a) == djs.find(b)}
+    \item 詢問連通塊個數？
+    \item 一邊 \texttt{join()} 一邊維護
+    \item 每當 \texttt{join()} 兩個不同的集合時，連通塊個數\texttt{ -= 1}。
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\btitle{例題}}
+  \begin{problem}[Ural 1671 Anansis Cobweb]
+    給一張無向圖 $G$，$N$ 個點、$M$ 條邊。
+    $Q$ 筆操作，每筆操作破壞一條邊後問連通塊個數。
+
+    \begin{itemize}
+        \item
+            $1 \leq N \leq 10^5$
+        \item
+            $1 \leq M \leq 10^5$
+        \item
+            $1 \leq Q \leq M$
+    \end{itemize}
+  \end{problem}
+\end{frame}
+
+\begin{frame}{並查集}
+  \begin{itemize}
+    \item 但，這題是破壞邊，不是增加邊，怎麼辦？
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{並查集}
+  \begin{itemize}
+    \item \textbf{時間倒流}
+    \item 沒有被破壞的邊表示從頭到尾都沒被破壞，可以在此刻維護一個並查集
+    \item 破壞一條邊，就相當於建造一條邊！
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\btitle{例題}}
+  \begin{problem}[POJ 1182 食物鏈]
+    有三類動物 $A, B, C$，這三類動物的食物鏈構成如下：$A$ 吃 $B$， $B$ 吃 $C$，$C$ 吃 $A$。 
+    現有 $N$ 個動物，編號 $1, 2, \ldots, N$。
+    每個動物都是 $A,B,C$ 中的一種，但並不知道是哪一種。 
+    依序給 $K$ 條屬於以下兩種的敘述：
+    \begin{itemize}
+      \item \texttt{1 X Y}，表示 $X$ 和 $Y$ 是同類
+      \item \texttt{2 X Y}，表示 $X$ 吃 $Y$
+    \end{itemize}
+    然而，並不是每條描述都是正確的，有些是真話，有些是假話。
+    
+    如果當前的話與前面的某些真話衝突，就是假話
+    
+    請判斷哪些話是真話，哪些話是假話。
+  \end{problem}
+\end{frame}
+
+\begin{frame}{並查集}
+  \begin{itemize}
+    \item 並查集的經典變化！
+    \item 第一種資訊，顯然可以用並查集維護
+    \item 假設 $a, b$ 同類，可能可以類似 \texttt{djs.join(a, b)}
+    \item 但，第二種資訊怎麼辦？好像沒辦法直接維護ㄋㄟ
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{並查集}
+  \begin{itemize}
+    \item 那就直接假設每種動物在每個分類底下的狀況！
+    \item 把每個動物 $i$ 分成三個資訊：動物 $i$ 屬於第 $A$ 類、動物 $i$ 屬於第 $B$ 類、動物 $i$ 屬於第 $C$ 類
+    \item 假設 $i_O$ 代表動物 $i$ 是第 $O$ 類的資訊
+    \item 有了這個可以做什麼 OuO
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{並查集}
+  \begin{itemize}
+    \item 我們可以用並查集維護\textbf{資訊間的因果關係}
+    \item 一個集合裡面的資訊代表「這些資訊必須同時發生」
+    \item 比如說，假設 $(x, y)$ 符合第一種資訊
+    \item 那就代表：如果 $x$ 是 $A$ 類，那 $y$ 必須是 $A$ 類，反之亦然（$B, C$ 類同樣可以套用）
+    \item 翻譯一下：如果 $x_A$ 發生的話，那 $y_A$ 也一定要發生（$B, C$ 類同樣可以套用）
+    \item $join(x_A, y_A), join(x_B, y_B), join(x_C, y_C)$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{並查集}
+  \begin{itemize}
+    \item 我們可以用並查集維護\textbf{資訊間的因果關係}
+    \item 一個集合裡面的資訊代表「這些資訊必須同時發生」
+    \item 比如說，假設 $(x, y)$ 符合第二種資訊
+    \item 那就代表：
+    \begin{itemize}
+      \item 如果 $x$ 是 $A$ 類，那 $y$ 必須是 $B$ 類，反之亦然
+      \item 如果 $x$ 是 $B$ 類，那 $y$ 必須是 $C$ 類，反之亦然
+      \item 如果 $x$ 是 $C$ 類，那 $y$ 必須是 $A$ 類，反之亦然
+    \end{itemize}
+    \item $join(x_A, y_B), join(x_B, y_C), join(x_C, y_A)$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{並查集}
+  \begin{itemize}
+    \item 我們可以用並查集維護\textbf{資訊間的因果關係}
+    \item 一個集合裡面的資訊代表「這些資訊必須同時發生」
+    \item 判斷真假？
+    \item 一種判斷方法：如果 join 後發生 $find(x_A) == find(x_B)$，就代表這中間一定有假話！
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\btitle{例題}}
+  \begin{problem}[經典問題]
+    給一張無向圖 $G$，$N$ 個點、$M$ 條邊。
+    
+    （版本一）請你判斷這張圖是不是二分圖？
+
+    （版本二）請你判斷這張圖存不存在長度是奇數的簡單環？
+  \end{problem}
+
+  這題是上個例題的簡化版，也是一個並查集非常實用的地方ㄛ！
+\end{frame}
+
+\begin{frame}{\btitle{總結}}
+  \begin{itemize}
+    \item 並查集是一個維護集合的工具
+    \item 常用在圖論上維護圖的連通性
+    \item 有蠻酷的變形
+    \item 有時候會跟時間線段樹搭配，歡迎參考進階資料結構的講義！
+  \end{itemize}
+\end{frame}
+
+\end{document}

@@ -1,0 +1,537 @@
+\documentclass[standalone]{beamer}
+
+\begin{document}
+\section{樹堆}
+
+\begin{frame}[fragile]{樹堆}
+  \begin{itemize}
+    \item Treap
+    \item Tree + Heap
+    \item 樹堆是一種二元樹，是 Binary Search Tree + Heap 的綜合題
+    \item 節點有兩個值：pri 跟 key，分別滿足\textbf{二元搜尋樹}的性質跟\textbf{堆}的性質
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{樹堆}
+  \begin{itemize}
+    \item 樹性質：
+    \begin{itemize}
+      \item 左子樹的 key 都小於根節點的 key
+      \item 左子樹的 key 都大於根節點的 key
+      \item 左右子樹都滿足樹性質
+    \end{itemize}
+    \item 堆性質：
+      \begin{itemize}
+        \item 左子樹的 pri 都小於跟節點的 pri
+        \item 左子樹的 pri 都小於跟節點的 pri
+        \item 左右子樹都滿足堆性質
+      \end{itemize}
+    \item pri 是用\textbf{隨機生成}的，可以讓樹高期望上變成 $O(\log N)$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{樹堆}
+  \begin{itemize}
+    \item 兩個最重要的操作：
+    \begin{itemize}
+      \item $merge(a, b)$ : 將兩棵樹堆 $a, b$ 合併爲一棵樹堆，需滿足樹堆 $a$ 的所有 key 值均小於等於樹堆 $b$ 的所有 key 值
+      \item $split(t, k)$ : 將樹堆 $t$ 分爲兩棵樹堆，其中第一棵樹堆中的 key 值均小於等於 $k$，而第二棵樹堆中的 key 值均大於 $k$
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{樹堆}
+  \begin{minted}[breaklines]{cpp}
+    struct Treap {
+      Treap *l, *r;
+      int pri, key, val;
+      Treap(int _val, int _key)
+          : val(_val), key(_key), l(NULL), r(NULL), pri(rand()) {}
+    };
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{merge}}
+  \begin{itemize}
+    \item 整個合併過程因爲堆性質的引入而拯救世界。由於\textbf{已經保證樹堆 $a$ 的所有 key 值需小於等於樹堆 $b$ 的所有 key 值}，我們只要顧好堆性質即可！因此，整個合併過程可以簡述如下：
+    \item 
+      合併三部曲：
+      \begin{enumerate}
+        \item 其中一棵樹爲空，直接返回另一棵
+        \item 依照堆性值決定哪個節點當根
+        \item 合併尚未合併的那一邊子樹
+      \end{enumerate}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{merge}}
+  \begin{itemize}
+    \item 
+      合併三部曲：
+      \begin{enumerate}
+        \item 其中一棵樹爲空，直接返回另一棵
+        \item 依照堆性值決定哪個節點當根
+        \item 合併尚未合併的那一邊子樹
+      \end{enumerate}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{merge}}
+  \begin{minted}[breaklines]{cpp}
+    Treap *merge(Treap *a, Treap *b) {
+      if (!a || !b) return a ? a : b;
+      if (a->pri > b->pri) {
+        a->r = merge(a->r, b);
+        return a;
+      } else {
+        b->l = merge(a, b->l);
+        return b;
+      }
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{split}}
+  \begin{itemize}
+    \item 在分裂的過程中，由於已經\textbf{維護好堆性質的部分}，因此，只需要依 key 值來決定要分到哪一棵樹，整個分裂過程簡述如下：
+
+    \item 
+    分裂三部曲：
+    \begin{enumerate}
+      \item 樹爲空，直接返回
+      \item 根節點要送給誰（依 key 值決定）
+      \item 分裂尚未分裂的那一棵子樹
+    \end{enumerate}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{split}}
+  \begin{itemize}
+    \item 
+    分裂三部曲：
+    \begin{enumerate}
+      \item 樹爲空，直接返回
+      \item 根節點要送給誰（依 key 值決定）
+      \item 分裂尚未分裂的那一棵子樹
+    \end{enumerate}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{split}}
+  \begin{minted}[breaklines]{cpp}
+    void split(Treap *t, int k, Treap *&a, Treap *&b) {
+      if (!t) a = b = NULL;
+      else if (t->key <= k) {
+        a = t;
+        split(t->r, k, a->r, b);
+      } else {
+        b = t;
+        split(t->l, k, a, b->l);
+      }
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{insert, remove}}
+  \begin{itemize}
+    \item insert
+    \begin{minted}[breaklines]{cpp}
+      Treap *insert(Treap *t, int k) {
+        Treap *tl, *tr;
+        split(t, k, tl, tr);
+        return merge(tl, merge(new Treap(k), tr));
+      }
+    \end{minted}
+    \item remove
+    \begin{minted}[breaklines]{cpp}
+      Treap *remove(Treap *t, int k) {
+        Treap *tl, *tr;
+        split(t, k - 1, tl, t);
+        split(t, k, t, tr);
+        // return merge(tl, tr);
+        return merge(merge(tl, t->l), merge(t->r, tr));
+      }
+    \end{minted}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題}}
+  \begin{itemize}
+    \item 要怎麼轉換到序列上呢？
+    \item 把 key 當作序列的 index，並且多一些變數維護題目要求的數值
+    \item 直接來看題目！
+    \begin{problem}[區間最大值 Range Maximum Query，RMQ]
+      一開始給你 $n$ 個數字 $a_1, a_2, \ldots, a_n$，
+      接下來有 $m$ 個操作，操作有兩種：
+      \begin{enumerate}
+          \item 將 $a_p$ 改為 $x$。
+          \item 詢問 $a_l, a_{l+1}, \ldots, a_r$ 中的最大值。
+      \end{enumerate}
+      假設所有數字均為正整數
+    \end{problem}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題實作}}
+  \begin{minted}[breaklines]{cpp}
+    struct Treap {
+      Treap *l, *r;
+      int pri, key; // key：陣列 index
+      int val, mx; // val: 該 index 的數值，mx：該子樹的最大值
+      Treap() {}
+      Treap(int _key, int _val) : l(NULL), r(NULL), pri(rand()), key(_key), val(_val), mx(_val){}
+    };
+    inline int mx(Treap *t) { return t ? t->mx : 0; }
+    inline void pull(Treap *t) { t->mx = max(mx(t->l), max(t->val, mx(t->r))); }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題實作}}
+  \begin{minted}[breaklines]{cpp}
+    Treap *merge(Treap *a, Treap *b) {
+      if (!a || !b)
+        return a ? a : b;
+      if (a->pri > b->pri) {
+        a->r = merge(a->r, b);
+        pull(a); // 子樹的值有動過，更新父節點！
+        return a;
+      } else {
+        b->l = merge(a, b->l);
+        pull(b);
+        return b;
+      }
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題實作}}
+  \begin{minted}[breaklines]{cpp}
+    void split(Treap *t, int x, Treap *&a, Treap *&b) {
+      if (!t)
+        a = b = NULL;
+      else if (t->key <= x) {
+        a = t;
+        split(t->r, x, a->r, b);
+        pull(a); // 子樹的值有動過，更新父節點！
+      } else {
+        b = t;
+        split(t->l, x, a, b->l);
+        pull(b);
+      }
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題實作}}
+  \begin{minted}[breaklines]{cpp}
+    Treap *t = NULL;
+    for (int i = 1; i <= n; i++) {
+      t = merge(t, new Treap(i, a[i]));
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題實作}}
+  \begin{itemize}
+    \item 查詢最大值
+      \begin{minted}[breaklines]{cpp}
+        split(t, l - 1, tl, t);
+        split(t, r, t, tr);
+        printf("%d\n", mx(t));
+        t = merge(merge(tl, t), tr);
+      \end{minted}
+    \item 修改
+      \begin{minted}[breaklines]{cpp}
+        split(t, p - 1, tl, t);
+        split(t, p, t, tr);
+        t->val = t->mx = x;
+        t = merge(merge(tl, t), tr);
+      \end{minted}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題}}
+  \begin{itemize}
+    \item 還可以加懶標！
+    \begin{problem}[區間最大值 Range Maximum Query，RMQ]
+      給定一個長度為 \(N\) 的正整數序列 \(a_1, \dots, a_N\)，接著有 \(Q\) 個詢問，每個詢問形如
+      \begin{itemize}
+          \item
+              \(\texttt{1 l r}\)，請輸出 \(a_l, a_{l+1}, \dots, a_r\) 當中最大的數字是多少。
+          \item
+              \(\texttt{2 l r d}\)，讓 \(a_l, a_{l+1}, \dots, a_r\) 全部增加 \(d\)。
+      \end{itemize}
+
+      \begin{itemize}
+          \item \(N, Q \leq 5 \times 10^5\)
+          \item \(d > 0\)
+      \end{itemize}
+    \end{problem}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題實作}}
+  \begin{minted}[breaklines]{cpp}
+    struct Treap {
+      Treap *l, *r;
+      int pri, key, val, big, add;
+      Treap(int _key, int _val): l(NULL), r(NULL), pri(rand()), key(_key), val(_val), big(_val), add(0){}
+    };
+    int Big(Treap *t) {
+      return t ? t->big : -inf;
+    }
+    void pull(Treap *t) {
+      t->big = max(t->val, max(Big(t->l), Big(t->r)));
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題實作}}
+  \begin{minted}[breaklines]{cpp}
+    void push(Treap *t) {
+      if (t->add == 0)
+        return;
+      if (t->l) {
+        t->l->val += t->add;
+        t->l->big += t->add;
+        t->l->add += t->add;
+      }
+      if (t->r) {
+        t->r->val += t->add;
+        t->r->big += t->add;
+        t->r->add += t->add;
+      }
+      t->add = 0;
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題實作}}
+  \begin{minted}[breaklines]{cpp}
+    Treap *merge(Treap *a, Treap *b) {
+      if (!a || !b)
+        return a ? a : b;
+      if (a->pri > b->pri) {
+        push(a); // 要前往子樹了，把懶標推下去
+        a->r = merge(a->r, b);
+        pull(a); // 子樹的值有動過，更新父節點！
+        return a;
+      } else {
+        push(b);
+        b->l = merge(a, b->l);
+        pull(b);
+        return b;
+      }
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題實作}}
+  \begin{minted}[breaklines]{cpp}
+    void split(Treap *t, int x, Treap *&a, Treap *&b) {
+      if (!t)
+        a = b = NULL;
+      else if (t->key <= x) {
+        a = t;
+        push(a); // 要前往子樹了，把懶標推下去
+        split(t->r, x, a->r, b);
+        pull(a); // 子樹的值有動過，更新父節點！
+      } else {
+        b = t;
+        push(b);
+        split(t->l, x, a, b->l);
+        pull(b);
+      }
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題實作}}
+  \begin{minted}[breaklines]{cpp}
+    int query(int l, int r) {
+      Treap *tl, *tr;
+      split(root, l - 1, tl, root);
+      split(root, r, root, tr);
+      int res = Big(root);
+      root = merge(merge(tl, root), tr);
+      return res;
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題實作}}
+  \begin{minted}[breaklines]{cpp}
+    void add(int l, int r, int d) {
+      Treap *tl, *tr;
+      split(root, l - 1, tl, root);
+      split(root, r, root, tr);
+      root->val += d;
+      root->big += d;
+      root->add += d;
+      root = merge(merge(tl, root), tr);
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{維護 size}}
+  \begin{itemize}
+    \item 維護一個節點底下有多少個節點！
+    \begin{minted}[breaklines]{cpp}
+      struct Treap {
+        Treap *l, *r;
+        int pri, size, val;
+        Treap(int _val) : val(_val), size(1), l(NULL), r(NULL), pri(rand()) {}
+      };
+      int Size(Treap *t) { return t ? t->size : 0; }
+      void pull(Treap *t) { t->size = 1 + Size(t->l) + Size(t->r); }
+    \end{minted}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{維護 size}}
+  \begin{itemize}
+    \item split 就多了一種方法：現在我們可以支援把前 $k$ 個東西切下來！
+    \begin{minted}[breaklines]{cpp}
+      void split(Treap *t, int k, Treap *&a, Treap *&b) {
+        if (!t)
+          a = b = NULL;
+        else if (Size(t->l) + 1 <= k) {
+          a = t;
+          split(t->r, k - Size(t->l) - 1, a->r, b);
+          pull(a);
+        } else {
+          b = t;
+          split(t->l, k, a, b->l);
+          pull(b);
+        }
+      }
+    \end{minted}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{維護 size}}
+  \begin{itemize}
+    \item 有了 size，在一般的序列我們就可以直接把 key 丟掉了！
+    \item 其實 key 根本就只是\textbf{它在整個樹堆裡有幾個人比他小嘛！}
+    \item \textbf{反正就算沒有 key，這棵樹總是有個中序走訪，我們依然可以將樹對應到序列上}
+    \item 放下 key 人生就會豁然開朗
+    \begin{problem}[區間最大值 Range Maximum Query，RMQ]
+      給一個長度為 $N$ 的序列 $a_1, a_2, \dots, a_N$ 以及 $Q$ 筆操作，操作內容形式如下：
+      
+      \begin{itemize}
+        \item \texttt{1 l r}：把 $a_l$ 到 $a_r$ 區間反轉
+        \item \texttt{2 l r}：求出 $a_l$ 到 $a_r$ 的和
+      \end{itemize}
+    \end{problem}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題講解}}
+  \begin{itemize}
+    \item 抱著 key 不放，會讓序列 index 難以維護
+    \item 用 size 讓人生豁然開朗！
+    \begin{minted}[breaklines]{cpp}
+      struct Treap {
+        Treap *l, *r;
+        ll pri, size, sum, val;
+        bool tag; // 用來維護子樹是否需要翻轉（swap）
+        Treap(int _val) : l(NULL), r(NULL), pri(rand()), size(1), sum(_val), val(_val), tag(false) {}
+      };
+    \end{minted}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題講解}}
+  \begin{minted}[breaklines]{cpp}
+    void push(Treap *t) { // 可以把 tag 想成要把底下的區間反轉幾次
+      if (!t->tag) return;
+      if (t->l) { // 把 tag 下推到左子樹
+        swap(t->l->l, t->l->r);
+        t->l->tag ^= t->tag;
+      }
+      if (t->r) {
+        swap(t->r->l, t->r->r);
+        t->r->tag ^= t->tag;
+      }
+      t->tag = false;
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{例題講解}}
+  \begin{minted}[breaklines]{cpp}
+    void reverse(int l, int r) {
+      Treap *tl, *tr;
+      split(root, l - 1, tl, root);
+      split(root, r - l + 1, root, tr);
+      swap(root->l, root->r); // 區間反轉，其實就是把左右子樹對調
+      root->tag = true; // 紀錄 tag，代表往下的子樹也都需要左右對調
+      root = merge(merge(tl, root), tr);
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{知道自己在哪}}
+  \begin{itemize}
+    \item 有了 size 之後，感覺就可以做很多壞事，比如說：
+    \item 給定一個 Treap 節點，詢問這個節點在中序的位置（也就是這個節點的 size）
+    \item 要怎麼做呢？
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{知道自己在哪}}
+  \begin{minted}[breaklines]{cpp}
+    struct Treap {
+      Treap *lc, *rc, *fa;
+      int sz, pri;
+      Treap(): lc(NULL), rc(NULL), fa(NULL), sz(1), pri(rand()){};
+    };
+
+    int Size(Treap *t) {
+      return t ? t->sz : 0;
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{知道自己在哪}}
+  \begin{minted}[breaklines]{cpp}
+    void pull(Treap *t) {
+      t->fa = NULL;
+      t->sz = 1 + Size(t->lc) + Size(t->rc);
+      if (t->lc) {
+        t->lc->fa = t;
+        t->sz += t->lc->sz;
+      }
+      if (t->rc) {
+        t->rc->fa = t;
+        t->sz+= t->rc->sz;
+      }
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{知道自己在哪}}
+  \begin{minted}[breaklines]{cpp}
+    int get_size(Treap *node) {
+      int ret = Size(node->lc) + 1;
+      while (node->fa != NULL) {
+        if (node->fa->rc == node) {
+          ret += 1 + Size(node->fa->lc);
+        }
+        node = node->fa;
+      }
+      return ret;
+    }
+  \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{\btitle{總結}}
+  \begin{itemize}
+    \item 一種利用隨機性質的平衡二元樹
+    \item 可以解決線段樹無法處理的區間翻轉、...等等操作
+    \item 操作都是建議在 merge、split 上面
+    \item warning：Treap 的常數又比線段樹大了一些，如果遇到卡常題目請斟酌使用
+  \end{itemize}
+\end{frame}
+
+\end{document}
