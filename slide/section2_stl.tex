@@ -45,6 +45,10 @@
   \begin{itemize}
     \item 可以想像成一個大 bool 陣列
     \item 可以直接對這個 bool 陣列做位元操作（and, or, 左移等等）
+    \begin{itemize}
+      \item 做這些操作的複雜度是 $O(\frac{N}{w})$！
+      \item $w$ 通常不是 $32$ 就是 $64$ ，後面會解釋！
+    \end{itemize}
     \item 可是等等，上面那個轉移式可以被寫成兩個 bool 陣列做位元操作的形式嗎？
   \end{itemize}
 \end{frame}

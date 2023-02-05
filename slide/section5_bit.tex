@@ -90,9 +90,16 @@
     \item $i$ 是集合裡第 $k$ 小的元素若且唯若 $sum(i - 1) < k$ 且 $sum(i) \ge k$
     \item 二分搜！
     \item 直接呼叫 query 二分搜是 $O(\log^2 N)$，複雜度似乎不太好
-    \item 用 BIT 的結構在上面枚舉 bit 二分搜！
+    \item 用 BIT 的結構在上面二分搜！
   \end{itemize}
 \end{frame}
+
+\begin{frame}{\btitle{第 K 小}}
+  來看圖！
+
+  \includegraphics[width=10cm]{figures/bit.png}
+\end{frame}
+
 
 \begin{frame}[fragile]{\btitle{第 K 小}}
   \begin{minted}[breaklines]{cpp}
@@ -100,9 +107,9 @@
       int res = 0;
       for (int i = 1 << __lg(n); i > 0; i >>= 1)
         // 決定 res 應該在 [res, res + i - 1] 還是 [res + i, res + 2i - 1]
-        if (res + i <= n && dat[res + i] < k) // 左邊的個數不夠，往右邊走（bit = 1）
+        if (res + i <= n && dat[res + i] < k) // 左邊的個數不夠，往右邊走
           k -= dat[res += i];
-        // 否則就代表左邊其實是夠的，就往左邊走（bit = 0）
+        // 否則就代表左邊其實是夠的，就往左邊走
       return res + 1;
     }
   \end{minted}

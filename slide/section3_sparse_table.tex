@@ -134,15 +134,6 @@
     \item 看起來我們預處理的資訊有 $O(N) \times O(\log N) = O(N \log N)$ 個
     \item 令 \(f(i, j)\) 表示區間 \([i, i+2^j)\) 的最大值
     \item 也就是說，$f(i, j)$ 是從 $i$ 開始往後 $2^j$ 這個連續序列的最大值
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Sparse Table}
-  \begin{itemize}
-    \item 把序列每個位置做為開頭，長度是 $1, 2, 4, 8$ 等等 $2$ 的冪次長度的子序列的最大值存起來
-    \item 看起來我們預處理的資訊有 $O(N) \times O(\log N) = O(N \log N)$ 個
-    \item 令 \(f(i, j)\) 表示區間 \([i, i+2^j)\) 的最大值
-    \item 也就是說，$f(i, j)$ 是從 $i$ 開始往後 $2^j$ 這個連續序列的最大值
     \item 要怎麼更新呢？
   \end{itemize}
 \end{frame}
